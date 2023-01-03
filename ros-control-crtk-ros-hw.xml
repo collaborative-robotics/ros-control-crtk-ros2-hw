@@ -1,0 +1,10 @@
+<library path="ros_control_crtk_ros2_plugins">
+  <class
+    name="ros_control_crtk_ros2/CRTK"
+    type="ros_control_crtk_ros2::CRTK"
+    base_class_type="ros_control_crtk_ros2::CRTKInterface">
+    <description>
+      CRTKPositionJoint
+    </description>
+  </class>
+</library>
