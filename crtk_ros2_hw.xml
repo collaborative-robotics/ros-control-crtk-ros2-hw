@@ -1,0 +1,10 @@
+<library path="crtk_ros2_hw">
+  <class
+    name="crtk_ros2_hw/crtkROSHardwareInterface"
+    type="crtk_ros2_hw::crtkROSHardwareInterface"
+    base_class_type="hardware_interface::SystemInterface">
+    <description>
+      DVRK Hardware interface which works along with the console topics.
+    </description>
+  </class>
+</library>
