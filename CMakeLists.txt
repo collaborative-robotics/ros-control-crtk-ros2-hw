@@ -17,12 +17,14 @@ find_package (pluginlib REQUIRED)
 find_package (rclcpp REQUIRED)
 find_package (rclcpp_lifecycle REQUIRED)
 find_package (sensor_msgs REQUIRED)
+find_package (crtk_msgs REQUIRED)
 find_package (rclcpp_action)
 find_package (control_msgs)
 find_package (geometry_msgs)
 find_package (std_msgs)
 find_package (trajectory_msgs)
 find_package (tf2)
+
 
 # library for hardware interface
 add_library (${PROJECT_NAME} SHARED src/crtk_ros2_hardware_interface.cpp)
@@ -47,6 +49,7 @@ target_include_directories (crtk_ros2_hw PUBLIC
       pluginlib
       hardware_interface
       sensor_msgs
+      crtk_msgs
     )
   endif()
 
@@ -59,6 +62,7 @@ ament_target_dependencies(${PROJECT_NAME} PUBLIC
   control_msgs
   geometry_msgs
   sensor_msgs
+  crtk_msgs
   trajectory_msgs)
 
 pluginlib_export_plugin_description_file(hardware_interface crtk_ros2_hw.xml)
@@ -95,6 +99,7 @@ ament_export_dependencies(
   control_msgs
   geometry_msgs
   sensor_msgs
+  crtk_msgs
   trajectory_msgs
   )
 ament_package ()

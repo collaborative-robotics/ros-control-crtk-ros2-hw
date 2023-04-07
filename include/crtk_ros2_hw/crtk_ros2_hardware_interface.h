@@ -10,6 +10,8 @@
 #include <chrono>
 
 #include <sensor_msgs/msg/joint_state.hpp>
+#include <crtk_msgs/msg/operating_state.hpp>
+#include <crtk_msgs/msg/string_stamped.hpp>
 #include <hardware_interface/types/hardware_interface_type_values.hpp>
 
 #include <hardware_interface/handle.hpp>
@@ -42,6 +44,7 @@ namespace crtk_ros2_hw {
         ~crtkROSHardwareInterface(){};
         
         CallbackReturn on_init(const hardware_interface::HardwareInfo & info) override;
+        CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override;
         std::vector<StateInterface> export_state_interfaces() override;
         std::vector<CommandInterface> export_command_interfaces() override;
         hardware_interface::return_type prepare_command_mode_switch(const std::vector<std::string>& start_interfaces, const std::vector<std::string>& stop_interfaces) override;
@@ -50,8 +53,6 @@ namespace crtk_ros2_hw {
         CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override;
         hardware_interface::return_type read(void) override;
         hardware_interface::return_type write(void) override;
-
-        
 
     private:
         void measured_js_callback(const sensor_msgs::msg::JointState & measured_js);
@@ -63,7 +64,9 @@ namespace crtk_ros2_hw {
         rclcpp::executors::SingleThreadedExecutor executor;
 
 
-        rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr m_measured_js_subscriber = nullptr;
+        rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr m_setpoint_js_subscriber = nullptr;
+        rclcpp::Subscription<crtk_msgs::msg::OperatingState>::SharedPtr m_operating_state_subscriber = nullptr;
+        rclcpp::Publisher<crtk_msgs::msg::StringStamped>::SharedPtr m_state_command_publisher = nullptr;
         rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr m_servo_jp_publisher = nullptr;
 
         std::size_t m_number_of_joints;
@@ -76,13 +79,10 @@ namespace crtk_ros2_hw {
 
         //Variables to store commands and states
         std::vector<double> hw_commands_positions_;
-        std::vector<double> hw_commands_velocities_;
         std::vector<double> hw_states_positions_;
-        std::vector<double> hw_states_velocities_;
-        std::vector<double> hw_states_accelerations_;
 
         // Measured states
-        sensor_msgs::msg::JointState m_measured_js; // joint state
+        sensor_msgs::msg::JointState m_setpoint_jp; // joint state
         sensor_msgs::msg::JointState m_servo_jp;    // commanded servo joint (velocity mode)
     };
 
