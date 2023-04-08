@@ -12,13 +12,16 @@ namespace crtk_ros2_hw {
         {
             return CallbackReturn::ERROR;
         }
+
         m_node_handle = std::make_shared<rclcpp::Node>("hardware_interface_read_write");
         executor.add_node(m_node_handle);
+
         m_setpoint_js_subscriber = m_node_handle->create_subscription<sensor_msgs::msg::JointState>("/PSM1/measured_js",
                                                                              1,
                                                                              std::bind(&crtkROSHardwareInterface::measured_js_callback,
                                                                                        this,
                                                                                        std::placeholders::_1));
+
         // m_operating_state_subscriber = m_node_handle->create_subscription<crtk_msgs::msg::OperatingState>("/PSM1/operating_state",
         //                                                                      1,
         //                                                                      std::bind(&crtkROSHardwareInterface::operating_state_callback,
@@ -34,9 +37,8 @@ namespace crtk_ros2_hw {
         ready_= false;
         m_number_of_joints = info_.joints.size();
         
-
-
         hw_states_positions_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
+        hw_states_velocities_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
         hw_commands_positions_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
         
 
@@ -61,11 +63,11 @@ namespace crtk_ros2_hw {
                 return CallbackReturn::ERROR;
                 }
 
-                if (joint.state_interfaces.size() != 1)
+                if (joint.state_interfaces.size() != 2)
                 {
                 RCLCPP_FATAL(
                     rclcpp::get_logger("crtkROSHardwareInterface"),
-                    "Joint '%s'has %zu state interfaces. 3 expected.", joint.name.c_str(),
+                    "Joint '%s'has %zu state interfaces. 2 expected.", joint.name.c_str(),
                     joint.state_interfaces.size());
                 return CallbackReturn::ERROR;
                 }
@@ -76,6 +78,15 @@ namespace crtk_ros2_hw {
                     rclcpp::get_logger("crtkROSHardwareInterface"),
                     "Joint '%s' has %s state interface. Expected %s.", joint.name.c_str(),
                     joint.state_interfaces[0].name.c_str(), hardware_interface::HW_IF_POSITION);
+                return CallbackReturn::ERROR;
+                }
+
+                if (!(joint.state_interfaces[1].name == hardware_interface::HW_IF_VELOCITY ))
+                {
+                RCLCPP_FATAL(
+                    rclcpp::get_logger("crtkROSHardwareInterface"),
+                    "Joint '%s' has %s state interface. Expected %s.", joint.name.c_str(),
+                    joint.state_interfaces[1].name.c_str(), hardware_interface::HW_IF_VELOCITY);
                 return CallbackReturn::ERROR;
                 }
         }
@@ -91,6 +102,7 @@ namespace crtk_ros2_hw {
         for (uint i = 0; i < hw_states_positions_.size(); i++)
             {
                 hw_states_positions_[i] = 0;
+                hw_states_velocities_[i] = 0;
                 hw_commands_positions_[i] = 0;
             }
         RCLCPP_INFO(rclcpp::get_logger("ConfigurecrtkROSHardwareInteface"), "Successfully configured!");
@@ -105,6 +117,7 @@ namespace crtk_ros2_hw {
         for (std::size_t i = 0; i < info_.joints.size(); ++i) {
             RCLCPP_INFO(rclcpp::get_logger("crtkROSHardwareInterface"), "Adding position state interfaces %s", info_.joints[i].name.c_str());
             state_interfaces.emplace_back(StateInterface(info_.joints[i].name, hardware_interface::HW_IF_POSITION, &hw_states_positions_[i]));
+            state_interfaces.emplace_back(StateInterface(info_.joints[i].name, hardware_interface::HW_IF_VELOCITY, &hw_states_velocities_[i]));
         }
         return state_interfaces;
     }
@@ -128,7 +141,7 @@ namespace crtk_ros2_hw {
         {
             hw_commands_positions_[i] = hw_states_positions_[i];
         }
-        hw_commands_positions_[2]= 0.12;
+        hw_commands_positions_[2]= 0.12; // Home position
         return CallbackReturn::SUCCESS;
 
     }
@@ -153,6 +166,7 @@ namespace crtk_ros2_hw {
             for(std::size_t i = 0; i < info_.joints.size();++i)
             {
                 hw_states_positions_[i] = m_setpoint_jp.position[i];
+                hw_states_velocities_[i] = m_setpoint_jp.velocity[i];
             }
         }
         return hardware_interface::return_type::OK;
@@ -172,7 +186,7 @@ namespace crtk_ros2_hw {
             // Shift the name matching in first read and confirmation to on_init
             // std::copy(m_setpoint_jp.name.begin(), m_setpoint_jp.name.end(),m_servo_jp.name.begin()); 
             
-            for(std::size_t i = 0; i < info_.joints.size();++i)
+            for(std::size_t i = 0; i < info_.joints.size(); ++i)
             {
                 RCLCPP_INFO(rclcpp::get_logger("WriteInterface"), "Got command %.5f for joint %d!",hw_commands_positions_[i],i);
                 m_servo_jp.position[i] = hw_commands_positions_[i];
@@ -202,7 +216,9 @@ namespace crtk_ros2_hw {
         if(measured_js.name.size() == info_.joints.size() )
         {
             m_setpoint_jp.position.resize(info_.joints.size());
+            m_setpoint_jp.velocity.resize(info_.joints.size());
             std::copy(measured_js.position.begin(), measured_js.position.end(), m_setpoint_jp.position.begin());
+            std::copy(measured_js.velocity.begin(), measured_js.velocity.end(), m_setpoint_jp.velocity.begin());
             first_message_rx = true;
         }
     }

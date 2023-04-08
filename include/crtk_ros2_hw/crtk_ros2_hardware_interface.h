@@ -83,7 +83,9 @@ namespace crtk_ros2_hw {
 
         //Variables to store commands and states
         std::vector<double> hw_commands_positions_;
+
         std::vector<double> hw_states_positions_;
+        std::vector<double> hw_states_velocities_;
 
         // Measured states
         sensor_msgs::msg::JointState m_setpoint_jp; // joint state
