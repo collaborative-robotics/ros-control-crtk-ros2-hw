@@ -26,7 +26,7 @@ namespace crtk_ros2_hw {
         //                                                                                std::placeholders::_1));
 
 
-        m_servo_jp_publisher = m_node_handle->create_publisher<sensor_msgs::msg::JointState>("/PSM1/servo_jp", 1);
+        m_servo_jp_publisher = m_node_handle->create_publisher<sensor_msgs::msg::JointState>("/PSM1/move_jp", 1);
         m_state_command_publisher = m_node_handle->create_publisher<crtk_msgs::msg::StringStamped>("/PSM1/state_command", 1);
 
         first_message_rx = false;
