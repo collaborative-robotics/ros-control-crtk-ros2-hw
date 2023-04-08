@@ -56,6 +56,8 @@ namespace crtk_ros2_hw {
 
     private:
         void measured_js_callback(const sensor_msgs::msg::JointState & measured_js);
+        // void operating_state_callback(const crtk_msgs::msg::OperatingState & measured_js);
+
         // virtual void initialize_from_crtk_node(const sensor_msgs::msg::JointState & measured_js);
         // virtual void copy_measured_js_from_crtk_node(const sensor_msgs::msg::JointState & measured_js);
 
@@ -73,6 +75,8 @@ namespace crtk_ros2_hw {
 
         //flag that first measurement has been recieved
         bool first_message_rx;
+        bool homed_;
+        bool ready_;
         
         //list of joints to contorl
         std::vector<std::string> controlled_joints;
@@ -84,6 +88,7 @@ namespace crtk_ros2_hw {
         // Measured states
         sensor_msgs::msg::JointState m_setpoint_jp; // joint state
         sensor_msgs::msg::JointState m_servo_jp;    // commanded servo joint (velocity mode)
+        crtk_msgs::msg::StringStamped configure_state_command; // Variable for sending the configure state command.
     };
 
 }

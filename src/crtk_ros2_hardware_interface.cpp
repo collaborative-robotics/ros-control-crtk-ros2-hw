@@ -14,19 +14,24 @@ namespace crtk_ros2_hw {
         }
         m_node_handle = std::make_shared<rclcpp::Node>("hardware_interface_read_write");
         executor.add_node(m_node_handle);
-        m_setpoint_js_subscriber = m_node_handle->create_subscription<sensor_msgs::msg::JointState>("/PSM1/setpoint_js",
+        m_setpoint_js_subscriber = m_node_handle->create_subscription<sensor_msgs::msg::JointState>("/PSM1/measured_js",
                                                                              1,
                                                                              std::bind(&crtkROSHardwareInterface::measured_js_callback,
                                                                                        this,
                                                                                        std::placeholders::_1));
-        // m_operating_state_subscriber = m_node_handle->create_subscription<crtk_msgs::msg::JointState>("/PSM1/setpoint_js",
+        // m_operating_state_subscriber = m_node_handle->create_subscription<crtk_msgs::msg::OperatingState>("/PSM1/operating_state",
         //                                                                      1,
-        //                                                                      std::bind(&crtkROSHardwareInterface::measured_js_callback,
+        //                                                                      std::bind(&crtkROSHardwareInterface::operating_state_callback,
         //                                                                                this,
         //                                                                                std::placeholders::_1));
 
+
         m_servo_jp_publisher = m_node_handle->create_publisher<sensor_msgs::msg::JointState>("/PSM1/servo_jp", 1);
+        m_state_command_publisher = m_node_handle->create_publisher<crtk_msgs::msg::StringStamped>("/PSM1/state_command", 1);
+
         first_message_rx = false;
+        homed_ = false;
+        ready_= false;
         m_number_of_joints = info_.joints.size();
         
 
@@ -142,6 +147,7 @@ namespace crtk_ros2_hw {
         executor.spin_some();
 
         // ADD a return code here!
+        // if(ready_ && homed_)
         if(first_message_rx)
         {        
             for(std::size_t i = 0; i < info_.joints.size();++i)
@@ -155,6 +161,7 @@ namespace crtk_ros2_hw {
     hardware_interface::return_type crtkROSHardwareInterface::write(void)
     {        
         executor.spin_some();
+        // if(ready_ && homed_)
         if(first_message_rx)
         {
             m_servo_jp.name.resize(0);
@@ -192,13 +199,6 @@ namespace crtk_ros2_hw {
 
     void crtkROSHardwareInterface::measured_js_callback(const sensor_msgs::msg::JointState & measured_js)
     {
-        // Check to see if the number of joints in the message matches the joints in controller
-        // for(int i = 0; i < measured_js.name.size();++i)
-        // {
-            // RCLCPP_INFO(rclcpp::get_logger("crtkROSHardwareInterface"),"Joint name is %s and controlled joint is %s %d.", measured_js.name[i],info_.joints[i].name.c_str(),measured_js.name[i].compare(info_.joints[i].name));
-        // }
-
-
         if(measured_js.name.size() == info_.joints.size() )
         {
             m_setpoint_jp.position.resize(info_.joints.size());
@@ -206,6 +206,33 @@ namespace crtk_ros2_hw {
             first_message_rx = true;
         }
     }
+
+    // void crtkROSHardwareInterface::operating_state_callback(const crtk_msgs::msg::OperatingState & current_state)
+    // {
+    //     std::string state_enable = "ENABLE";
+    //     bool call_homing = false;
+    //     std::string state(current_state.state.c_str());
+    //     RCLCPP_INFO(rclcpp::get_logger("Operating state"),"Current State %s and ready state %d",state,current_state.is_homed);
+    //     if(state != state_enable)
+    //     {
+    //         ready_ = false;
+    //         call_homing = true;
+    //     }
+    //     else
+    //     {
+    //         ready_ = true;
+    //     }
+    //     if( current_state.is_homed != homed_)
+    //     {
+    //         homed_ = current_state.is_homed;
+    //         call_homing = true;
+    //     }
+    //     // if(call_homing)
+    //     // {
+    //     //     configure_state_command.string = "home";
+    //     //     m_state_command_publisher->publish(configure_state_command);
+    //     // }
+    // }
 } // namespace
 
 
