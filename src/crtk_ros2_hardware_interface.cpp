@@ -22,26 +22,28 @@ namespace crtk_ros2_hw {
                                                                                        this,
                                                                                        std::placeholders::_1));
 
-        // m_operating_state_subscriber = m_node_handle->create_subscription<crtk_msgs::msg::OperatingState>("/PSM1/operating_state",
-        //                                                                      1,
-        //                                                                      std::bind(&crtkROSHardwareInterface::operating_state_callback,
-        //                                                                                this,
-        //                                                                                std::placeholders::_1));
+        m_operating_state_subscriber = m_node_handle->create_subscription<crtk_msgs::msg::OperatingState>("/PSM1/operating_state",
+                                                                             1,
+                                                                             std::bind(&crtkROSHardwareInterface::operating_state_callback,
+                                                                                       this,
+                                                                                       std::placeholders::_1));
 
 
         m_servo_jp_publisher = m_node_handle->create_publisher<sensor_msgs::msg::JointState>("/PSM1/move_jp", 1);
         m_state_command_publisher = m_node_handle->create_publisher<crtk_msgs::msg::StringStamped>("/PSM1/state_command", 1);
 
         first_message_rx = false;
-        homed_ = false;
+        homing_ = 0;
+        busy_ = 0;
         ready_= false;
+
         m_number_of_joints = info_.joints.size();
-        
+        time_now = std::chrono::system_clock::now();
+
         hw_states_positions_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
         hw_states_velocities_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
         hw_commands_positions_.resize(info_.joints.size(), std::numeric_limits<double>::quiet_NaN());
         
-
         // Checks if the ROS2 control configuration matches the Hardware Interface configuration for command and state
         for (const hardware_interface::ComponentInfo & joint : info_.joints)
         {
@@ -130,6 +132,7 @@ namespace crtk_ros2_hw {
             RCLCPP_INFO(rclcpp::get_logger("crtkROSHardwareInterface"), "Adding position command interface: %s", info_.joints[i].name.c_str());
             command_interfaces.emplace_back(CommandInterface(info_.joints[i].name, hardware_interface::HW_IF_POSITION, &hw_commands_positions_[i]));
         }
+        RCLCPP_INFO(rclcpp::get_logger("Initializing"),"Exported command_interfaces");
         return command_interfaces;
     }
 
@@ -142,6 +145,7 @@ namespace crtk_ros2_hw {
             hw_commands_positions_[i] = hw_states_positions_[i];
         }
         hw_commands_positions_[2]= 0.12; // Home position
+        RCLCPP_INFO(rclcpp::get_logger("Activation"),"Activated hardware interface");
         return CallbackReturn::SUCCESS;
 
     }
@@ -160,7 +164,7 @@ namespace crtk_ros2_hw {
         executor.spin_some();
 
         // ADD a return code here!
-        // if(ready_ && homed_)
+        // if(ready_ && homing_ == 2)
         if(first_message_rx)
         {        
             for(std::size_t i = 0; i < info_.joints.size();++i)
@@ -175,20 +179,25 @@ namespace crtk_ros2_hw {
     hardware_interface::return_type crtkROSHardwareInterface::write(void)
     {        
         executor.spin_some();
-        // if(ready_ && homed_)
-        if(first_message_rx)
+        
+        elapsed_time = std::chrono::system_clock::now()-time_now;
+        if(!ready_ && homing_ == 1 && elapsed_time.count()>5)
+        {
+            // RCLCPP_INFO(rclcpp::get_logger("Operating state"),"Time is %f", elapsed_time.count());
+            configure_state_command.string = "home";
+            m_state_command_publisher->publish(configure_state_command);
+        }
+
+        if(first_message_rx && homing_ == 2)
         {
             m_servo_jp.name.resize(0);
             m_servo_jp.position.resize(info_.joints.size());
             m_servo_jp.velocity.resize(0);
             m_servo_jp.effort.resize(0);
 
-            // Shift the name matching in first read and confirmation to on_init
-            // std::copy(m_setpoint_jp.name.begin(), m_setpoint_jp.name.end(),m_servo_jp.name.begin()); 
-            
+            RCLCPP_INFO(rclcpp::get_logger("WriteInterface"), "Got command [%.5f %.5f %.5f %.5f %.5f %.5f]!",hw_commands_positions_[0],hw_commands_positions_[1],hw_commands_positions_[2],hw_commands_positions_[3],hw_commands_positions_[4],hw_commands_positions_[5]);
             for(std::size_t i = 0; i < info_.joints.size(); ++i)
             {
-                RCLCPP_INFO(rclcpp::get_logger("WriteInterface"), "Got command %.5f for joint %d!",hw_commands_positions_[i],i);
                 m_servo_jp.position[i] = hw_commands_positions_[i];
             }
             m_servo_jp_publisher->publish(m_servo_jp);
@@ -213,7 +222,8 @@ namespace crtk_ros2_hw {
 
     void crtkROSHardwareInterface::measured_js_callback(const sensor_msgs::msg::JointState & measured_js)
     {
-        if(measured_js.name.size() == info_.joints.size() )
+        // Start reading only when the robot is ready
+        if(ready_)
         {
             m_setpoint_jp.position.resize(info_.joints.size());
             m_setpoint_jp.velocity.resize(info_.joints.size());
@@ -223,34 +233,33 @@ namespace crtk_ros2_hw {
         }
     }
 
-    // void crtkROSHardwareInterface::operating_state_callback(const crtk_msgs::msg::OperatingState & current_state)
-    // {
-    //     std::string state_enable = "ENABLE";
-    //     bool call_homing = false;
-    //     std::string state(current_state.state.c_str());
-    //     RCLCPP_INFO(rclcpp::get_logger("Operating state"),"Current State %s and ready state %d",state,current_state.is_homed);
-    //     if(state != state_enable)
-    //     {
-    //         ready_ = false;
-    //         call_homing = true;
-    //     }
-    //     else
-    //     {
-    //         ready_ = true;
-    //     }
-    //     if( current_state.is_homed != homed_)
-    //     {
-    //         homed_ = current_state.is_homed;
-    //         call_homing = true;
-    //     }
-    //     // if(call_homing)
-    //     // {
-    //     //     configure_state_command.string = "home";
-    //     //     m_state_command_publisher->publish(configure_state_command);
-    //     // }
-    // }
-} // namespace
+    void crtkROSHardwareInterface::operating_state_callback(const crtk_msgs::msg::OperatingState & current_state)
+    {
+        std::string state_enable = "ENABLED";
+        std::string curr_state = current_state.state.c_str();
+        // if the robot was ready once don't need to check again.
+        if(!ready_)
+        {
+            // Check if the robot is enabled
+            if(curr_state == state_enable)
+            {
+                RCLCPP_INFO(rclcpp::get_logger("Operating state"),"Enabled");
+                ready_ = true;
+            }
+            else
+            {
+                ready_ = false;
+            }
+        }
+        // Checks if the robot is homed or has been homed before
+        if(!current_state.is_homed && homing_!= 2)
+            {
+                homing_ = 1;
+            }
+            else{homing_=2;}
 
+    }
+} // namespace
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(crtk_ros2_hw::crtkROSHardwareInterface, hardware_interface::SystemInterface)

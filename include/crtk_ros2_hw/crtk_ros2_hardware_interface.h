@@ -56,10 +56,7 @@ namespace crtk_ros2_hw {
 
     private:
         void measured_js_callback(const sensor_msgs::msg::JointState & measured_js);
-        // void operating_state_callback(const crtk_msgs::msg::OperatingState & measured_js);
-
-        // virtual void initialize_from_crtk_node(const sensor_msgs::msg::JointState & measured_js);
-        // virtual void copy_measured_js_from_crtk_node(const sensor_msgs::msg::JointState & measured_js);
+        void operating_state_callback(const crtk_msgs::msg::OperatingState & measured_js);
 
         bool m_crtk_node_found = false;
         std::shared_ptr<rclcpp::Node> m_node_handle = nullptr;
@@ -75,8 +72,15 @@ namespace crtk_ros2_hw {
 
         //flag that first measurement has been recieved
         bool first_message_rx;
-        bool homed_;
+        
+        int homing_;
+        // 1 Not homed
+        // 2 Call homing
+        // 3 Homing Done
+        bool busy_;
         bool ready_;
+        std::chrono::system_clock::time_point time_now;
+        std::chrono::duration<double> elapsed_time;
         
         //list of joints to contorl
         std::vector<std::string> controlled_joints;
