@@ -1,0 +1,30 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/dvrk/ros2_ws/install/crtk_ros2_hw/include/**",
+        "/home/dvrk/ros2_ws/install/cisst_ros2_crtk/include/**",
+        "/home/dvrk/ros2_ws/install/crtk_msgs/include/**",
+        "/home/dvrk/ros2_ws/install/cisst_ros2_bridge/include/**",
+        "/home/dvrk/ros2_ws/install/cisst_msgs/include/**",
+        "/opt/ros/galactic/include/**",
+        "/home/dvrk/ros2_ws/src/cisst-saw/cisstNetlib/include/**",
+        "/home/dvrk/ros2_ws/src/cisst-saw/cisst_ros2_bridge/include/**",
+        "/home/dvrk/ros2_ws/src/cisst-saw/cisst_ros2_crtk/include/**",
+        "/home/dvrk/ros2_ws/src/dvrk/crtk_ros2_hw/include/**",
+        "/home/dvrk/ros2_ws/src/dvrk/dvrk_robot/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
