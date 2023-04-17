@@ -16,21 +16,21 @@ namespace crtk_ros2_hw {
         m_node_handle = std::make_shared<rclcpp::Node>("hardware_interface_read_write");
         executor.add_node(m_node_handle);
 
-        m_setpoint_js_subscriber = m_node_handle->create_subscription<sensor_msgs::msg::JointState>("/PSM1/measured_js",
+        m_setpoint_js_subscriber = m_node_handle->create_subscription<sensor_msgs::msg::JointState>("/PSM3/measured_js",
                                                                              1,
                                                                              std::bind(&crtkROSHardwareInterface::measured_js_callback,
                                                                                        this,
                                                                                        std::placeholders::_1));
 
-        m_operating_state_subscriber = m_node_handle->create_subscription<crtk_msgs::msg::OperatingState>("/PSM1/operating_state",
+        m_operating_state_subscriber = m_node_handle->create_subscription<crtk_msgs::msg::OperatingState>("/PSM3/operating_state",
                                                                              1,
                                                                              std::bind(&crtkROSHardwareInterface::operating_state_callback,
                                                                                        this,
                                                                                        std::placeholders::_1));
 
 
-        m_servo_jp_publisher = m_node_handle->create_publisher<sensor_msgs::msg::JointState>("/PSM1/move_jp", 1);
-        m_state_command_publisher = m_node_handle->create_publisher<crtk_msgs::msg::StringStamped>("/PSM1/state_command", 1);
+        m_servo_jp_publisher = m_node_handle->create_publisher<sensor_msgs::msg::JointState>("/PSM3/move_jp", 1);
+        m_state_command_publisher = m_node_handle->create_publisher<crtk_msgs::msg::StringStamped>("/PSM3/state_command", 1);
 
         first_message_rx = false;
         homing_ = 0;
